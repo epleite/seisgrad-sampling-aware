@@ -1,0 +1,64 @@
+{
+  "invariance": {
+    "thdr": {
+      "sample_space": 0.6017467986131458,
+      "sampling_aware": 0.5136300741631792,
+      "reduction_percent": 14.643488698743472
+    },
+    "asag": {
+      "sample_space": 0.6919756012077535,
+      "sampling_aware": 0.16756897431788487,
+      "reduction_percent": 75.78397648335938
+    },
+    "tdr": {
+      "sample_space": 0.12340308053068247,
+      "sampling_aware": 0.0873546377773186,
+      "reduction_percent": 29.21194722071863
+    },
+    "tahg": {
+      "sample_space": 0.9959588880283275,
+      "sampling_aware": 0.8802480073509664,
+      "reduction_percent": 11.618037859617958
+    }
+  },
+  "anisotropic_orientation_recovery": {
+    "thdr": {
+      "sample_space_mean_ap": 0.7915225242982675,
+      "sample_space_sd_ap": 0.04899640444188663,
+      "sampling_aware_mean_ap": 0.8722976368770873,
+      "sampling_aware_sd_ap": 0.03545486334411561
+    },
+    "asag": {
+      "sample_space_mean_ap": 0.4294668522635587,
+      "sample_space_sd_ap": 0.056156595809930904,
+      "sampling_aware_mean_ap": 0.41646838227272687,
+      "sampling_aware_sd_ap": 0.02440484151706641
+    },
+    "tdr": {
+      "sample_space_mean_ap": 0.0648524417423814,
+      "sample_space_sd_ap": 0.006828177026835221,
+      "sampling_aware_mean_ap": 0.06450240651036418,
+      "sampling_aware_sd_ap": 0.006795600286941522
+    },
+    "tahg": {
+      "sample_space_mean_ap": 0.6024800531390084,
+      "sample_space_sd_ap": 0.08974052225515323,
+      "sampling_aware_mean_ap": 0.6174997752337966,
+      "sampling_aware_sd_ap": 0.1046834983599249
+    }
+  },
+  "clean_medium_contrast_average_precision": {
+    "baseline:input_amplitude": 0.38391149621712894,
+    "sample_space:thdr": 0.9158628477563736,
+    "sample_space:asag": 0.48618555990280476,
+    "sample_space:tdr_magnitude": 0.06060460696568966,
+    "sample_space:tahg_magnitude": 0.5176135379315744,
+    "sample_space:tdr_zero_conditioned": 0.9065921362060012,
+    "baseline:semblance_discontinuity": 0.8373478531303464,
+    "sampling_aware:thdr": 0.9158628477563736,
+    "sampling_aware:asag": 0.47265864710427713,
+    "sampling_aware:tdr_magnitude": 0.06059448986707961,
+    "sampling_aware:tahg_magnitude": 0.5171819482843104,
+    "sampling_aware:tdr_zero_conditioned": 0.9090382433558063
+  }
+}

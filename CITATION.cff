@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the associated article and this repository."
+title: "SeisGrad: sampling-aware gradient attributes for 3D seismic volumes"
+type: software
+version: 1.0.0
+date-released: 2026-08-08
+authors:
+  - family-names: Leite
+    given-names: Emilson Pereira
+    email: emilson@unicamp.br
+    affiliation: "Department of Geology and Natural Resources, Institute of Geosciences, University of Campinas, Brazil"
+license: MIT
