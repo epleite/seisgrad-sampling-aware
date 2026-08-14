@@ -38,6 +38,17 @@ python -m pip install -e .
 
 On Windows, activate the environment with `.venv\Scripts\activate`.
 
+## Quick test
+
+After completing the installation, run:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+A successful run executes seven tests and ends with `OK`.
+
+
 ## Reproduce the article
 
 Full recomputation, figure generation, and tests:
