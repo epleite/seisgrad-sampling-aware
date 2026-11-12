@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite the associated article and this repository."
 title: "SeisGrad: sampling-aware gradient attributes for 3D seismic volumes"
 type: software
-version: 1.1.1
+version: 1.1.2
 date-released: 2026-11-12
 doi: 10.5281/zenodo.22127203
 repository-code: "https://github.com/epleite/seisgrad-sampling-aware"

@@ -28,7 +28,7 @@ NATIVE_SPACING = (12.5, 25.01, 0.004)
 SUBVOLUME_SHAPE = (192, 192, 384)
 VELOCITIES_M_S = (2550.0, 3000.0, 3450.0)
 ATTRIBUTES = ("thdr", "asag", "tdr", "tahg")
-OUTPUT = ROOT / "output" / "revision_v1.1.1"
+OUTPUT = ROOT / "output" / "revision_v1.1.2"
 
 
 def central_subvolume(volume: np.ndarray) -> np.ndarray:

@@ -1,15 +1,24 @@
 # Changelog
 
+## v1.1.2 - 2026-11-12
+
+- Add a deterministic clean control for the exact 30-degree, 25 x 12.5 m,
+  8% channel configuration used by the paired 10 dB noise experiment.
+- Clarify that synthetic summary claims use the smaller gain from the shared
+  and implementation-matched references separately for each attribute and grid.
+- Preserve the v1.1.1 stochastic outputs byte for byte while documenting that
+  noise, rather than geometry alone, compresses the clean channel AP gain.
+
 ## v1.1.1 - 2026-11-12
 
 - Define two cross-grid references explicitly: a shared sampling-aware native
   reference and an implementation-matched native reference.
 - Add implementation-matched sample-space comparisons to the synthetic and
-  Penobscot result tables and report their smaller, conservative gains.
+  Penobscot result tables and report both reference definitions.
 - Retain the shared reference as a separate physical-coordinate comparison and
   label both reference definitions in every result row.
 - Add numerical aliasing-control ratios and deterministic reference outputs
-  under `output/revision_v1.1.1/`.
+  under `output/revision_v1.1.1/` in that release.
 
 ## v1.1.0 - 2026-11-12
 

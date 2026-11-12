@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seisgrad"
-version = "1.1.1"
+version = "1.1.2"
 description = "Sampling-aware gradient attributes for 3D seismic volumes"
 readme = "README.md"
 requires-python = ">=3.11"

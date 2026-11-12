@@ -141,7 +141,9 @@ Cross-grid tables answer two complementary questions. The shared
 sampling-aware native reference measures closeness to a single
 physical-coordinate target. The implementation-matched native reference
 measures stability under resampling within each implementation. Manuscript
-percentage gains use the latter, smaller comparison wherever the two differ.
+synthetic summary claims use the smaller of the two gains separately for each
+attribute and grid. Field summary claims use the implementation-matched
+comparison, which is the smaller value for all reported field cases.
 
 The non-Gaussian model combines anisotropically colored Gaussian noise
 (`sigma=(1.6, 0.8, 0.0)`), clipped Student-t noise with 3 degrees of freedom,
@@ -155,9 +157,9 @@ normalized to the requested 10 dB RMS SNR.
 |---|---|
 | Figure 1 | `output/benchmark_v0.2/submission_figure_1_fault_complete.png` |
 | Figure 2 | `output/channel_benchmark_v0.1/channel_manuscript_comparison.png` |
-| Revised Figure 3 | `output/revision_v1.1.1/figure_3_shape_rmse.png` |
-| Revised Figure 4 | `output/revision_v1.1.1/figure_4_paired_ap.png` |
-| Figure 5 | `output/revision_v1.1.1/figure_5_penobscot_time_slice.png` |
+| Revised Figure 3 | `output/revision_v1.1.2/figure_3_shape_rmse.png` |
+| Revised Figure 4 | `output/revision_v1.1.2/figure_4_paired_ap.png` |
+| Figure 5 | `output/revision_v1.1.2/figure_5_penobscot_time_slice.png` |
 
 The manuscript figures are saved as 600-dpi PNG images. CSV and JSON files in
 the same directories contain the reference numerical results used to build the

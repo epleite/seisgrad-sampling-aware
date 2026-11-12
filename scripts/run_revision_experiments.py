@@ -1,8 +1,9 @@
 """Reproduce the synthetic experiments added for ACAGS-D-26-00290 revision.
 
 The script writes scale-invariant cross-grid errors, velocity and operator
-sensitivity, paired 30-realization fault and channel tests, bootstrap
-confidence intervals, and the two summary figures introduced in the revision.
+sensitivity, a deterministic clean-channel control, paired 30-realization fault
+and channel tests, bootstrap confidence intervals, and the two summary figures
+introduced in the revision.
 """
 
 from __future__ import annotations
@@ -34,7 +35,7 @@ from seisgrad.metrics import (
 )
 
 
-OUTPUT = ROOT / "output" / "revision_v1.1.1"
+OUTPUT = ROOT / "output" / "revision_v1.1.2"
 IMPLEMENTATIONS = (("sample_space", False), ("sampling_aware", True))
 ATTRIBUTES = ("thdr", "asag", "tdr", "tahg")
 
@@ -352,6 +353,50 @@ def _paired_channel_rows() -> list[dict[str, object]]:
     return rows
 
 
+def clean_channel_control() -> list[dict[str, object]]:
+    """Evaluate the exact channel configuration used by the noisy paired test."""
+
+    case = channel.SAMPLING_CASES[1]
+    model, clean, _, velocity, top = channel.generate_case(
+        case,
+        orientation_deg=30.0,
+        contrast_fraction=channel.REFERENCE_CONTRAST,
+    )
+    labels, evaluation = channel.evaluation_masks(model)
+    semblance = unsteered_semblance_discontinuity(clean)
+    paired: dict[str, float] = {}
+    for implementation, aware in IMPLEMENTATIONS:
+        attributes = gradient_attributes(
+            clean,
+            spacing=(case.dx_m, case.dy_m, case.dt_s),
+            reference_velocity_m_s=velocity,
+            sampling_aware=aware,
+        )
+        maps = channel.score_maps(clean, attributes, semblance, top, case.dt_s)
+        paired[implementation] = average_precision(
+            labels[evaluation], maps["thdr"][evaluation]
+        )
+    rows = [
+        {
+            "orientation_deg": 30.0,
+            "dx_m": case.dx_m,
+            "dy_m": case.dy_m,
+            "dt_s": case.dt_s,
+            "contrast_fraction": channel.REFERENCE_CONTRAST,
+            "noise_model": "clean",
+            "snr_db": "",
+            "attribute": "thdr",
+            "sample_space_ap": paired["sample_space"],
+            "sampling_aware_ap": paired["sampling_aware"],
+            "paired_ap_difference": (
+                paired["sampling_aware"] - paired["sample_space"]
+            ),
+        }
+    ]
+    write_csv(OUTPUT / "channel_clean_control.csv", rows)
+    return rows
+
+
 def summarize_pairs(
     fault_rows: list[dict[str, object]],
     channel_rows: list[dict[str, object]],
@@ -533,6 +578,8 @@ def main() -> None:
     velocity_sensitivity_experiment()
     print("Running operator-sensitivity experiment...", flush=True)
     operator_sensitivity_experiment()
+    print("Running deterministic clean-channel control...", flush=True)
+    clean_channel_control()
     plot_shape_rmse(shape_rows)
 
     if not args.skip_noise:
