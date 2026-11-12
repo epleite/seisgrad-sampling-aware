@@ -28,7 +28,7 @@ NATIVE_SPACING = (12.5, 25.01, 0.004)
 SUBVOLUME_SHAPE = (192, 192, 384)
 VELOCITIES_M_S = (2550.0, 3000.0, 3450.0)
 ATTRIBUTES = ("thdr", "asag", "tdr", "tahg")
-OUTPUT = ROOT / "output" / "revision_v1.1"
+OUTPUT = ROOT / "output" / "revision_v1.1.1"
 
 
 def central_subvolume(volume: np.ndarray) -> np.ndarray:
@@ -110,14 +110,26 @@ def evaluate_axis(
     target_spacing[axis] *= 2.0
     target_spacing_tuple = tuple(target_spacing)
 
-    reference_native = attribute_set(
-        filtered,
-        spacing=NATIVE_SPACING,
-        velocity_m_s=3000.0,
-        sampling_aware=True,
-    )
-    reference = {name: decimate(values, axis) for name, values in reference_native.items()}
-    del reference_native
+    native_references = {
+        implementation: attribute_set(
+            filtered,
+            spacing=NATIVE_SPACING,
+            velocity_m_s=3000.0,
+            sampling_aware=aware,
+        )
+        for implementation, aware in (
+            ("sample_space", False),
+            ("sampling_aware", True),
+        )
+    }
+    references = {
+        implementation: {
+            name: decimate(values, axis)
+            for name, values in attribute_values.items()
+        }
+        for implementation, attribute_values in native_references.items()
+    }
+    del native_references
 
     rows: list[dict[str, object]] = []
     panels: dict[str, np.ndarray] = {"amplitude": target}
@@ -133,28 +145,40 @@ def evaluate_axis(
                 sampling_aware=aware,
             )
             for name in ATTRIBUTES:
-                ref_crop, estimate_crop = crop_pair(reference[name], attributes[name])
-                rows.append(
-                    {
-                        "preprocessing": (
-                            f"31_tap_kaiser_beta_{beta:g}_cutoff_0.45"
-                        ),
-                        "decimated_axis": "inline" if axis == 0 else "crossline",
-                        "target_dx_m": target_spacing_tuple[0],
-                        "target_dy_m": target_spacing_tuple[1],
-                        "dt_s": target_spacing_tuple[2],
-                        "velocity_m_s": velocity,
-                        "implementation": implementation,
-                        "attribute": name,
-                        "shape_rmse": shape_rmse(ref_crop, estimate_crop),
-                    }
+                reference_modes = (
+                    ("shared_sampling_aware_native", "sampling_aware"),
+                    ("implementation_matched_native", implementation),
                 )
+                for reference_definition, reference_mode in reference_modes:
+                    ref_crop, estimate_crop = crop_pair(
+                        references[reference_mode][name], attributes[name]
+                    )
+                    rows.append(
+                        {
+                            "preprocessing": (
+                                f"31_tap_kaiser_beta_{beta:g}_cutoff_0.45"
+                            ),
+                            "decimated_axis": (
+                                "inline" if axis == 0 else "crossline"
+                            ),
+                            "target_dx_m": target_spacing_tuple[0],
+                            "target_dy_m": target_spacing_tuple[1],
+                            "dt_s": target_spacing_tuple[2],
+                            "velocity_m_s": velocity,
+                            "reference_definition": reference_definition,
+                            "implementation": implementation,
+                            "attribute": name,
+                            "shape_rmse": shape_rmse(
+                                ref_crop, estimate_crop
+                            ),
+                        }
+                    )
             if velocity == 3000.0:
                 for name in ("thdr", "tdr"):
                     panels[f"{implementation}_{name}"] = attributes[name]
 
     for name in ("thdr", "tdr"):
-        panels[f"reference_{name}"] = reference[name]
+        panels[f"reference_{name}"] = references["sampling_aware"][name]
     return rows, panels
 
 
@@ -169,14 +193,24 @@ def evaluate_unfiltered_control(
     target_spacing = list(NATIVE_SPACING)
     target_spacing[axis] *= 2.0
     target_spacing_tuple = tuple(target_spacing)
-    reference_native = attribute_set(
-        amplitude,
-        spacing=NATIVE_SPACING,
-        velocity_m_s=3000.0,
-        sampling_aware=True,
-    )
-    reference = {
-        name: decimate(values, axis) for name, values in reference_native.items()
+    native_references = {
+        implementation: attribute_set(
+            amplitude,
+            spacing=NATIVE_SPACING,
+            velocity_m_s=3000.0,
+            sampling_aware=aware,
+        )
+        for implementation, aware in (
+            ("sample_space", False),
+            ("sampling_aware", True),
+        )
+    }
+    references = {
+        implementation: {
+            name: decimate(values, axis)
+            for name, values in attribute_values.items()
+        }
+        for implementation, attribute_values in native_references.items()
     }
     rows: list[dict[str, object]] = []
     for implementation, aware in (
@@ -190,20 +224,32 @@ def evaluate_unfiltered_control(
             sampling_aware=aware,
         )
         for name in ATTRIBUTES:
-            ref_crop, estimate_crop = crop_pair(reference[name], attributes[name])
-            rows.append(
-                {
-                    "preprocessing": "unfiltered_aliasing_control",
-                    "decimated_axis": "inline" if axis == 0 else "crossline",
-                    "target_dx_m": target_spacing_tuple[0],
-                    "target_dy_m": target_spacing_tuple[1],
-                    "dt_s": target_spacing_tuple[2],
-                    "velocity_m_s": 3000.0,
-                    "implementation": implementation,
-                    "attribute": name,
-                    "shape_rmse": shape_rmse(ref_crop, estimate_crop),
-                }
+            reference_modes = (
+                ("shared_sampling_aware_native", "sampling_aware"),
+                ("implementation_matched_native", implementation),
             )
+            for reference_definition, reference_mode in reference_modes:
+                ref_crop, estimate_crop = crop_pair(
+                    references[reference_mode][name], attributes[name]
+                )
+                rows.append(
+                    {
+                        "preprocessing": "unfiltered_aliasing_control",
+                        "decimated_axis": (
+                            "inline" if axis == 0 else "crossline"
+                        ),
+                        "target_dx_m": target_spacing_tuple[0],
+                        "target_dy_m": target_spacing_tuple[1],
+                        "dt_s": target_spacing_tuple[2],
+                        "velocity_m_s": 3000.0,
+                        "reference_definition": reference_definition,
+                        "implementation": implementation,
+                        "attribute": name,
+                        "shape_rmse": shape_rmse(
+                            ref_crop, estimate_crop
+                        ),
+                    }
+                )
     return rows
 
 

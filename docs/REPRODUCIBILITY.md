@@ -53,12 +53,16 @@ The script selects indices `[134:326, 139:331, 243:627]`, yielding the central
 percentile of absolute amplitude. Native spacings are 12.5 m inline, 25.01 m
 crossline, and 4 ms. Before factor-two decimation, the relevant horizontal axis
 is filtered by a 31-tap FIR with a Kaiser window (`beta=8.0`) and normalized
-cutoff 0.45. Convolution uses reflected boundaries. Reference attributes are
-calculated on the filtered native grid and sampled at coincident target
-locations. Comparisons exclude 20 horizontal and eight temporal target-grid
-samples at each boundary. A direct, unfiltered decimation is reported as a
-separate aliasing control. The reference velocity is 3000 m/s, with 2550 and
-3450 m/s sensitivity cases.
+cutoff 0.45. Convolution uses reflected boundaries. Two reference definitions
+are reported. The shared physical-coordinate comparison uses the sampling-aware
+attribute on the filtered native grid for both target implementations. The
+conservative implementation-matched comparison uses the native sample-space
+attribute for the decimated sample-space result and the native sampling-aware
+attribute for the decimated sampling-aware result. Both native references are
+sampled at coincident target locations. Comparisons exclude 20 horizontal and
+eight temporal target-grid samples at each boundary. A direct, unfiltered
+decimation is reported as a separate aliasing control. The reference velocity
+is 3000 m/s, with 2550 and 3450 m/s sensitivity cases.
 
 ## Attribute inputs and outputs
 
@@ -133,6 +137,12 @@ realization to the sample-space and sampling-aware implementations. Random
 seeds are fixed in `scripts/run_revision_experiments.py`; paired percentile
 bootstrap intervals use 10,000 resamples.
 
+Cross-grid tables answer two complementary questions. The shared
+sampling-aware native reference measures closeness to a single
+physical-coordinate target. The implementation-matched native reference
+measures stability under resampling within each implementation. Manuscript
+percentage gains use the latter, smaller comparison wherever the two differ.
+
 The non-Gaussian model combines anisotropically colored Gaussian noise
 (`sigma=(1.6, 0.8, 0.0)`), clipped Student-t noise with 3 degrees of freedom,
 and a sinusoidal footprint with a 12-sample period along the coarse horizontal
@@ -145,9 +155,9 @@ normalized to the requested 10 dB RMS SNR.
 |---|---|
 | Figure 1 | `output/benchmark_v0.2/submission_figure_1_fault_complete.png` |
 | Figure 2 | `output/channel_benchmark_v0.1/channel_manuscript_comparison.png` |
-| Revised Figure 3 | `output/revision_v1.1/figure_3_shape_rmse.png` |
-| Revised Figure 4 | `output/revision_v1.1/figure_4_paired_ap.png` |
-| Figure 5 | `output/revision_v1.1/figure_5_penobscot_time_slice.png` |
+| Revised Figure 3 | `output/revision_v1.1.1/figure_3_shape_rmse.png` |
+| Revised Figure 4 | `output/revision_v1.1.1/figure_4_paired_ap.png` |
+| Figure 5 | `output/revision_v1.1.1/figure_5_penobscot_time_slice.png` |
 
 The manuscript figures are saved as 600-dpi PNG images. CSV and JSON files in
 the same directories contain the reference numerical results used to build the

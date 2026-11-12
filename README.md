@@ -121,5 +121,6 @@ MIT. See `LICENSE`.
 ## Citation and archive
 
 The DOI for all SeisGrad versions is
-[10.5281/zenodo.22127203](https://doi.org/10.5281/zenodo.22127203). See
+[10.5281/zenodo.22127203](https://doi.org/10.5281/zenodo.22127203). The exact
+archive DOI for v1.1.1 is recorded in the corresponding Zenodo release. See
 `CITATION.cff` for machine-readable citation metadata.

@@ -34,7 +34,7 @@ from seisgrad.metrics import (
 )
 
 
-OUTPUT = ROOT / "output" / "revision_v1.1"
+OUTPUT = ROOT / "output" / "revision_v1.1.1"
 IMPLEMENTATIONS = (("sample_space", False), ("sampling_aware", True))
 ATTRIBUTES = ("thdr", "asag", "tdr", "tahg")
 
@@ -86,24 +86,34 @@ def cross_grid_shape_experiment() -> list[dict[str, object]]:
                 sampling_aware=aware,
             )
             for name in ATTRIBUTES:
-                reference = reference_attributes[mode][name][
-                    :: factors[0], :: factors[1], :: factors[2]
-                ]
-                reference, estimate = fault.common_interior(
-                    reference, attributes[name]
+                reference_modes = (
+                    ("shared_sampling_aware_native", "sampling_aware"),
+                    ("implementation_matched_native", mode),
                 )
-                rows.append(
-                    {
-                        "sampling_case": case.name,
-                        "dx_m": case.dx_m,
-                        "dy_m": case.dy_m,
-                        "dt_s": case.dt_s,
-                        "implementation": mode,
-                        "attribute": name,
-                        "shape_rmse": shape_rmse(reference, estimate),
-                        "correlation": correlation(reference, estimate),
-                    }
-                )
+                for reference_definition, reference_mode in reference_modes:
+                    reference = reference_attributes[reference_mode][name][
+                        :: factors[0], :: factors[1], :: factors[2]
+                    ]
+                    reference_crop, estimate_crop = fault.common_interior(
+                        reference, attributes[name]
+                    )
+                    rows.append(
+                        {
+                            "sampling_case": case.name,
+                            "dx_m": case.dx_m,
+                            "dy_m": case.dy_m,
+                            "dt_s": case.dt_s,
+                            "reference_definition": reference_definition,
+                            "implementation": mode,
+                            "attribute": name,
+                            "shape_rmse": shape_rmse(
+                                reference_crop, estimate_crop
+                            ),
+                            "correlation": correlation(
+                                reference_crop, estimate_crop
+                            ),
+                        }
+                    )
     write_csv(OUTPUT / "cross_grid_shape_rmse.csv", rows)
     return rows
 
@@ -411,6 +421,11 @@ def summarize_pairs(
 
 
 def plot_shape_rmse(rows: list[dict[str, object]]) -> None:
+    rows = [
+        row
+        for row in rows
+        if row["reference_definition"] == "implementation_matched_native"
+    ]
     cases = [case.name for case in fault.SAMPLING_CASES[1:]]
     labels = ["25 x 12.5", "12.5 x 25", "25 x 25"]
     x = np.arange(len(cases))
