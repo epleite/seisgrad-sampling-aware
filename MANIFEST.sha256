@@ -61,11 +61,6 @@ be9d03dba80c2fc0a88fc0eed17754594ebc5bcbc8beb9a810973f60e7276715  ./scripts/repr
 43689839b7def3779f813d48cd474acaef8a6b8433a9a16bba78df5e7017a25f  ./scripts/run_channel_benchmark.py
 5b73822f68e3c022159c6d5f47753d45d387be08cc15f6047d9478524871c56a  ./scripts/run_penobscot_resampling.py
 d0b4797bb65e3c459a698da8e5d2dbd766597448491730a36e461d8d7edd8f97  ./scripts/run_revision_experiments.py
-2f265e534bd45236a00629092b8fcfecea71e4110be9eba33265b4440023c12f  ./src/seisgrad.egg-info/PKG-INFO
-cc598ef111cb146f96f1239ab7d31d03dab813ff72f77b08d2e29e41c8fe2b51  ./src/seisgrad.egg-info/SOURCES.txt
-01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b  ./src/seisgrad.egg-info/dependency_links.txt
-2005ec38036fa28a6c267b4bd774621d4b8055d3301cffcd7d3ee7a6f223494e  ./src/seisgrad.egg-info/requires.txt
-ea4cfbcf0cb154e7fe4e779eee0273eb4f742cb9cf54d866258d0a59c30a1b89  ./src/seisgrad.egg-info/top_level.txt
 413c6ac16e8dbda135f3218de6997e332c4b7b48e3647ac3819c6e95badc84ad  ./src/seisgrad/__init__.py
 e8c853181a1d781debc559e33a4fc3c3bb6d2f8f162848500b06b8df46d9825a  ./src/seisgrad/attributes.py
 79a9f8b3ee0d0d569cb747cc006df5a176531bbdada70ce6d20593a3068b4e45  ./src/seisgrad/baselines.py
