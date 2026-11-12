@@ -1,4 +1,4 @@
-"""Reproduce the numerical results and figures reported in the Short Note."""
+"""Reproduce the numerical results and figures reported in the manuscript."""
 
 from __future__ import annotations
 
@@ -33,6 +33,14 @@ def main() -> None:
         action="store_true",
         help="Do not run the unit-test suite after reproduction.",
     )
+    parser.add_argument(
+        "--penobscot-data",
+        type=Path,
+        help=(
+            "Optional path to Penobscot/seismic.npy from Zenodo record "
+            "21764042. When omitted, the external-data experiment is skipped."
+        ),
+    )
     args = parser.parse_args()
 
     if args.figures_only:
@@ -42,6 +50,18 @@ def main() -> None:
         # The fault benchmark uses the channel-margin table when building Fig. 4.
         run("scripts/run_channel_benchmark.py")
         run("scripts/run_benchmark.py")
+        run("scripts/run_revision_experiments.py")
+        if args.penobscot_data is not None:
+            run(
+                "scripts/run_penobscot_resampling.py",
+                str(args.penobscot_data.resolve()),
+            )
+        else:
+            print(
+                "Skipping optional Penobscot experiment; pass --penobscot-data "
+                "to reproduce it.",
+                flush=True,
+            )
 
     if not args.skip_tests:
         run("-m", "unittest", "discover", "-s", "tests", "-v")

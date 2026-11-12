@@ -7,9 +7,15 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from seisgrad.attributes import gradient_attributes
+from seisgrad.attributes import _derivative, gradient_attributes
 from seisgrad.forward import acoustic_impedance
-from seisgrad.metrics import average_precision, best_f1
+from seisgrad.metrics import (
+    add_colored_impulsive_noise,
+    average_precision,
+    best_f1,
+    paired_bootstrap_interval,
+    shape_rmse,
+)
 from seisgrad.model import Grid3D, build_incised_channel_model
 
 
@@ -40,6 +46,16 @@ class GradientAttributeTests(unittest.TestCase):
         )
         self.assertTrue(np.allclose(result["thdr"], np.hypot(2.0, 3.0)))
         self.assertTrue(np.allclose(result["asag"], np.sqrt(2.0**2 + 3.0**2 + 4.0**2)))
+
+    def test_fourth_order_derivative_is_exact_for_quartic_interior(self):
+        coordinate = np.arange(-8.0, 9.0)
+        values = coordinate**4
+        derivative = _derivative(values, spacing=1.0, axis=0, order=4)
+        np.testing.assert_allclose(derivative[2:-2], 4.0 * coordinate[2:-2] ** 3)
+
+    def test_invalid_derivative_order_is_rejected(self):
+        with self.assertRaises(ValueError):
+            _derivative(np.arange(8.0), spacing=1.0, axis=0, order=6)
 
     def test_acoustic_impedance(self):
         vp = np.array([2000.0, 2500.0])
@@ -99,6 +115,26 @@ class GradientAttributeTests(unittest.TestCase):
         f1, threshold = best_f1(labels, scores)
         self.assertAlmostEqual(f1, 1.0)
         self.assertAlmostEqual(threshold, 0.8)
+
+    def test_shape_rmse_ignores_positive_global_scale(self):
+        values = np.arange(1.0, 10.0).reshape(3, 3)
+        self.assertAlmostEqual(shape_rmse(values, 7.5 * values), 0.0)
+
+    def test_revision_noise_and_bootstrap_are_reproducible(self):
+        values = np.arange(64.0).reshape(4, 4, 4)
+        first = add_colored_impulsive_noise(
+            values, 10.0, rng=np.random.default_rng(17)
+        )
+        second = add_colored_impulsive_noise(
+            values, 10.0, rng=np.random.default_rng(17)
+        )
+        np.testing.assert_array_equal(first, second)
+        low, high = paired_bootstrap_interval(
+            np.array([0.1, 0.2, 0.3]),
+            rng=np.random.default_rng(19),
+            resamples=1000,
+        )
+        self.assertLess(low, high)
 
 
 if __name__ == "__main__":

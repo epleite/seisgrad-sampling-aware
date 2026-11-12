@@ -4,18 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seisgrad"
-version = "1.0.0"
+version = "1.1.0"
 description = "Sampling-aware gradient attributes for 3D seismic volumes"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-  {name = "Emilson Pereira Leite", email = "emilson@unicamp.br"},
+  {name = "Emilson Pereira Leite"},
 ]
 license = {text = "MIT"}
 dependencies = [
   "numpy>=2.0",
   "scipy>=1.14",
   "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+field-data = [
+  "remotezip>=0.12.6",
 ]
 
 [tool.setuptools.packages.find]

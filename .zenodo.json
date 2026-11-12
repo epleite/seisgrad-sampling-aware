@@ -1,0 +1,34 @@
+{
+  "title": "SeisGrad: sampling-aware gradient attributes for 3D seismic volumes",
+  "description": "Revision reproducibility release accompanying the manuscript \"Grid dependence of gradient-derived seismic attributes: a sampling-aware formulation\". Version 1.1.0 adds complete cross-grid shape-RMSE tables, paired 30-realization Gaussian and colored/impulsive/footprint tests, velocity and finite-difference-order sensitivity, and a public Penobscot anti-aliased resampling experiment. The external Penobscot data are referenced by DOI and are not redistributed.",
+  "creators": [
+    {
+      "name": "Leite, Emilson Pereira",
+      "affiliation": "Department of Geology and Natural Resources, Institute of Geosciences, University of Campinas, Brazil"
+    }
+  ],
+  "upload_type": "software",
+  "license": "MIT",
+  "version": "v1.1.0",
+  "keywords": [
+    "seismic attributes",
+    "sampling",
+    "finite differences",
+    "reproducibility",
+    "Penobscot",
+    "fault interpretation",
+    "channel interpretation"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/epleite/seisgrad-sampling-aware/tree/v1.1.0",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.5281/zenodo.21764042",
+      "relation": "references",
+      "scheme": "doi"
+    }
+  ]
+}

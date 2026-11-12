@@ -2,16 +2,16 @@
 
 ## Scientific inputs
 
-No external dataset is used. The scripts generate two continuous synthetic
-geological targets and sample them independently on several seismic grids.
+The scripts generate two continuous synthetic geological targets and sample
+them independently on several seismic grids. The optional field experiment
+uses one public external amplitude volume and never uses its labels.
 
 ### Fault benchmark
 
-`scripts/run_benchmark.py` builds an 800 m × 800 m × 800 m layered acoustic
-model with an oblique normal fault. The default depth sampling is 5 m and the
-post-stack zero-offset response uses a 30 Hz Ricker wavelet. Fault throws of
-25, 50, and 100 m are tested. Gaussian noise is evaluated at clean, 20, 10,
-and 5 dB SNR, with five realizations for each noisy condition.
+`scripts/run_benchmark.py` builds an 800 m x 800 m x 800 m layered acoustic
+model with an oblique normal fault. The depth sampling is 5 m and the post-stack
+zero-offset response uses a 30 Hz Ricker wavelet. Fault throws of 25, 50, and
+100 m are tested.
 
 The independent sampling cases are:
 
@@ -22,8 +22,10 @@ The independent sampling cases are:
 | coarse crossline | 12.5 | 25.0 | 0.004 |
 | coarse both | 25.0 | 25.0 | 0.004 |
 
-Using a nominal velocity of 3000 m/s, these settings give the voxel aspect
-ratios discussed in the manuscript. Random seeds are fixed in the script.
+The original benchmark evaluates Gaussian noise at clean, 20, 10, and 5 dB
+SNR. `scripts/run_revision_experiments.py` adds 30 paired realizations at 10 dB
+for Gaussian white noise and for a documented composite of colored noise,
+Student-t impulses, and a periodic acquisition footprint.
 
 ### Channel benchmark
 
@@ -35,7 +37,28 @@ analytical channel-margin mask provide the qualitative and quantitative tests.
 
 The exact layer properties, geometry equations, wavelet construction, and
 sampling parameters are implemented in `src/seisgrad/model.py`,
-`src/seisgrad/forward.py`, and the two benchmark scripts.
+`src/seisgrad/forward.py`, and the benchmark scripts.
+
+### Public Penobscot field-resampling proxy
+
+The input is `Penobscot/seismic.npy` from the AdaSemSeg processed-data archive
+([Zenodo record 21764042](https://doi.org/10.5281/zenodo.21764042)). Its expected
+shape and type are `(460, 471, 870)` and `uint8`; its MD5 checksum is
+`6afe5db0ffd28cdb0ffae98ee5d1cbdb`. The checksum-verified downloader retrieves
+only this 188.5 MB ZIP member by HTTP range request. Labels and the source HDF5
+file are not downloaded or used.
+
+The script selects indices `[134:326, 139:331, 243:627]`, yielding the central
+`192 x 192 x 384` block. It subtracts the median and divides by the 99th
+percentile of absolute amplitude. Native spacings are 12.5 m inline, 25.01 m
+crossline, and 4 ms. Before factor-two decimation, the relevant horizontal axis
+is filtered by a 31-tap FIR with a Kaiser window (`beta=8.0`) and normalized
+cutoff 0.45. Convolution uses reflected boundaries. Reference attributes are
+calculated on the filtered native grid and sampled at coincident target
+locations. Comparisons exclude 20 horizontal and eight temporal target-grid
+samples at each boundary. A direct, unfiltered decimation is reported as a
+separate aliasing control. The reference velocity is 3000 m/s, with 2550 and
+3450 m/s sensitivity cases.
 
 ## Attribute inputs and outputs
 
@@ -47,22 +70,26 @@ gradient_attributes(
     spacing=(dx_m, dy_m, dt_s),
     reference_velocity_m_s=3000.0,
     sampling_aware=True,
+    derivative_order=2,
 )
 ```
 
-Input requirements:
+Input requirements and options:
 
-- `amplitude`: a three-dimensional array ordered as `(x, y, time)`;
+- `amplitude`: three-dimensional array ordered as `(x, y, time)`;
 - `spacing`: positive horizontal distances in metres and time sampling in seconds;
-- `reference_velocity_m_s`: a positive scalar or an array matching `amplitude`;
-- `sampling_aware=False`: selects the per-sample comparator.
+- `reference_velocity_m_s`: positive scalar or array matching `amplitude`;
+- `sampling_aware=False`: selects the per-sample comparator;
+- `derivative_order=2`: centered three-point main operator;
+- `derivative_order=4`: five-point interior sensitivity operator. The two
+  samples nearest either boundary retain the order-2 treatment.
 
-The function returns arrays for THDR, ASAG, TDR, and TAHG. All outputs have the
-same shape as `amplitude`; TDR and TAHG are angles in radians.
+The function returns THDR, ASAG, TDR, and TAHG arrays with the same shape as
+the input. TDR and TAHG are angles in radians.
 
 ## Commands
 
-Run everything from the repository root:
+Run the synthetic workflow and tests from the repository root:
 
 ```bash
 python scripts/reproduce_paper.py
@@ -73,36 +100,62 @@ Equivalent explicit sequence:
 ```bash
 python scripts/run_channel_benchmark.py
 python scripts/run_benchmark.py
+python scripts/run_revision_experiments.py
 python -m unittest discover -s tests -v
 ```
 
-To regenerate only the four manuscript figures from the stored result tables:
+To regenerate the original four figures from their stored result tables:
 
 ```bash
 python scripts/reproduce_paper.py --figures-only
 ```
 
-Use `--skip-tests` with the orchestration script only when test execution is
-not desired. The workflow is CPU-only and requires no GPU. Runtime and memory
-depend on the platform; the full workflow holds multiple 3D volumes in memory,
-whereas figure-only regeneration is substantially lighter.
+To include the field experiment:
+
+```bash
+python -m pip install -e '.[field-data]'
+python scripts/fetch_penobscot.py
+python scripts/reproduce_paper.py \
+  --penobscot-data data/Penobscot/seismic.npy
+```
+
+The field data remain outside version control and outside the SeisGrad Zenodo
+software archive. `--skip-tests` omits the unit tests. The workflow is CPU-only
+and requires no GPU.
+
+## Revision metrics and deterministic protocol
+
+Shape RMSE independently divides the reference and estimate by their RMS before
+computing RMSE. It therefore measures spatial-pattern disagreement rather than
+a positive global amplitude factor. Pearson correlation is reported alongside
+it. Paired detection experiments always pass the same noisy amplitude
+realization to the sample-space and sampling-aware implementations. Random
+seeds are fixed in `scripts/run_revision_experiments.py`; paired percentile
+bootstrap intervals use 10,000 resamples.
+
+The non-Gaussian model combines anisotropically colored Gaussian noise
+(`sigma=(1.6, 0.8, 0.0)`), clipped Student-t noise with 3 degrees of freedom,
+and a sinusoidal footprint with a 12-sample period along the coarse horizontal
+axis. Their weights are 0.65, 0.25, and 0.35. The zero-mean composite is
+normalized to the requested 10 dB RMS SNR.
 
 ## Manuscript figure map
 
 | Manuscript item | Generated file |
 |---|---|
 | Figure 1 | `output/benchmark_v0.2/submission_figure_1_fault_complete.png` |
-| Figure 2 | `output/benchmark_v0.2/benchmark_figure_2_invariance.png` |
-| Figure 3 | `output/channel_benchmark_v0.1/channel_manuscript_comparison.png` |
-| Figure 4 | `output/benchmark_v0.2/submission_figure_4_joint_metrics.png` |
+| Figure 2 | `output/channel_benchmark_v0.1/channel_manuscript_comparison.png` |
+| Revised Figure 3 | `output/revision_v1.1/figure_3_shape_rmse.png` |
+| Revised Figure 4 | `output/revision_v1.1/figure_4_paired_ap.png` |
+| Figure 5 | `output/revision_v1.1/figure_5_penobscot_time_slice.png` |
 
-The four files are saved as 600-dpi PNG images by the final plotting routines.
-The CSV and JSON files in the same directories are the reference numerical
-results used to build the figures and manuscript summary statistics.
+The manuscript figures are saved as 600-dpi PNG images. CSV and JSON files in
+the same directories contain the reference numerical results used to build the
+figures and manuscript statistics.
 
 ## Expected behavior
 
-A successful run prints progress for the channel benchmark, fault benchmark,
-figure generation, and tests. The seven unit tests should report `OK`. Small
-floating-point differences may occur across platforms or dependency versions;
-the pinned versions in `requirements.txt` define the reference environment.
+A successful full run prints progress for the channel, fault, revision, figure,
+field (when requested), and test stages. The eleven unit tests should report
+`OK`. Small floating-point differences may occur across platforms or dependency
+versions; `requirements.txt` defines the reference environment.

@@ -1,6 +1,6 @@
 # Reference outputs
 
-This directory contains the numerical tables and four high-resolution figures
+This directory contains the numerical tables and high-resolution figures
 reported in the manuscript. They are retained so that users can inspect the
 reference results and run the fast `--figures-only` workflow without first
 recomputing every benchmark.
@@ -8,3 +8,8 @@ recomputing every benchmark.
 Running `python scripts/reproduce_paper.py` overwrites these files with a fresh
 reproduction. The benchmark scripts may also create additional diagnostic
 figures and a channel report that are not required by the manuscript.
+
+`revision_v1.1/` contains the complete cross-grid shape-RMSE table, velocity
+and operator sensitivity, all paired realization-level values, bootstrap
+summaries, the Penobscot resampling and aliasing-control table, and Figures
+3--5 introduced or updated during revision.
