@@ -14,12 +14,13 @@ def normalized_rmse(reference: np.ndarray, estimate: np.ndarray) -> float:
     return float(np.sqrt(np.mean((reference - estimate) ** 2)) / max(scale, 1e-12))
 
 
-def shape_rmse(reference: np.ndarray, estimate: np.ndarray) -> float:
-    """RMSE after independently scaling both arrays to unit RMS.
+def rms_normalized_error(reference: np.ndarray, estimate: np.ndarray) -> float:
+    """RMS error after independently scaling both arrays to unit RMS.
 
-    This separates spatial-pattern disagreement from a global positive scale
-    factor.  It is therefore the primary cross-grid metric in the manuscript
-    revision, while :func:`normalized_rmse` remains amplitude sensitive.
+    This dimensionless metric removes one global positive scale factor from
+    each field while retaining offset and spatial-pattern differences.  It is
+    the primary cross-grid metric in the manuscript revision, while
+    :func:`normalized_rmse` remains amplitude sensitive.
     """
 
     reference = np.asarray(reference, dtype=float)
@@ -35,6 +36,16 @@ def shape_rmse(reference: np.ndarray, estimate: np.ndarray) -> float:
             )
         )
     )
+
+
+def shape_rmse(reference: np.ndarray, estimate: np.ndarray) -> float:
+    """Backward-compatible alias for :func:`rms_normalized_error`.
+
+    ``shape_rmse`` was the provisional name used in releases through v1.1.2.
+    New code should use the explicit metric name ``rms_normalized_error``.
+    """
+
+    return rms_normalized_error(reference, estimate)
 
 
 def correlation(reference: np.ndarray, estimate: np.ndarray) -> float:

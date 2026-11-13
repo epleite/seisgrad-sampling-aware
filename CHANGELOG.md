@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.3 - 2026-11-13
+
+- Rename the provisional ``shape RMSE`` metric to the explicit
+  ``RMS-normalized error`` while retaining a backward-compatible Python alias.
+- Redesign Figures 3--5 with consistent panel labels, redundant visual coding,
+  shared legends or color bars, physical axis units, and publication-scale
+  typography.
+
 ## v1.1.2 - 2026-11-12
 
 - Add a deterministic clean control for the exact 30-degree, 25 x 12.5 m,
@@ -24,7 +32,7 @@
 
 - Add the public Penobscot anti-aliased field-resampling experiment, the
   qualitative time-slice comparison, and the unfiltered aliasing control.
-- Add complete cross-grid shape-RMSE tables for THDR, ASAG, TDR, and TAHG.
+- Add complete cross-grid RMS-normalized-error tables for THDR, ASAG, TDR, and TAHG.
 - Add 30-realization paired Gaussian and colored/impulsive/footprint tests with
   deterministic seeds and paired bootstrap confidence intervals.
 - Add global and spatial velocity-error experiments and report

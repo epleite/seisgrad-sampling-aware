@@ -108,11 +108,14 @@ python scripts/run_revision_experiments.py
 python -m unittest discover -s tests -v
 ```
 
-To regenerate the original four figures from their stored result tables:
+To regenerate synthetic Figures 1--4 from their stored result tables:
 
 ```bash
 python scripts/reproduce_paper.py --figures-only
 ```
+
+This fast path leaves Figure 5 unchanged because its panels require the
+external Penobscot amplitude volume.
 
 To include the field experiment:
 
@@ -129,10 +132,11 @@ and requires no GPU.
 
 ## Revision metrics and deterministic protocol
 
-Shape RMSE independently divides the reference and estimate by their RMS before
-computing RMSE. It therefore measures spatial-pattern disagreement rather than
-a positive global amplitude factor. Pearson correlation is reported alongside
-it. Paired detection experiments always pass the same noisy amplitude
+RMS-normalized error independently divides the reference and estimate by their
+RMS before computing the RMS difference. It therefore measures spatial-pattern
+disagreement rather than a positive global amplitude factor. The deprecated
+``shape_rmse`` Python name remains as an alias for backward compatibility.
+Pearson correlation is reported alongside it. Paired detection experiments always pass the same noisy amplitude
 realization to the sample-space and sampling-aware implementations. Random
 seeds are fixed in `scripts/run_revision_experiments.py`; paired percentile
 bootstrap intervals use 10,000 resamples.
@@ -157,9 +161,9 @@ normalized to the requested 10 dB RMS SNR.
 |---|---|
 | Figure 1 | `output/benchmark_v0.2/submission_figure_1_fault_complete.png` |
 | Figure 2 | `output/channel_benchmark_v0.1/channel_manuscript_comparison.png` |
-| Revised Figure 3 | `output/revision_v1.1.2/figure_3_shape_rmse.png` |
-| Revised Figure 4 | `output/revision_v1.1.2/figure_4_paired_ap.png` |
-| Figure 5 | `output/revision_v1.1.2/figure_5_penobscot_time_slice.png` |
+| Revised Figure 3 | `output/revision_v1.1.3/figure_3_rms_normalized_error.png` |
+| Revised Figure 4 | `output/revision_v1.1.3/figure_4_paired_ap.png` |
+| Figure 5 | `output/revision_v1.1.3/figure_5_penobscot_time_slice.png` |
 
 The manuscript figures are saved as 600-dpi PNG images. CSV and JSON files in
 the same directories contain the reference numerical results used to build the

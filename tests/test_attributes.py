@@ -14,6 +14,7 @@ from seisgrad.metrics import (
     average_precision,
     best_f1,
     paired_bootstrap_interval,
+    rms_normalized_error,
     shape_rmse,
 )
 from seisgrad.model import Grid3D, build_incised_channel_model
@@ -116,9 +117,13 @@ class GradientAttributeTests(unittest.TestCase):
         self.assertAlmostEqual(f1, 1.0)
         self.assertAlmostEqual(threshold, 0.8)
 
-    def test_shape_rmse_ignores_positive_global_scale(self):
+    def test_rms_normalized_error_ignores_positive_global_scale(self):
         values = np.arange(1.0, 10.0).reshape(3, 3)
-        self.assertAlmostEqual(shape_rmse(values, 7.5 * values), 0.0)
+        self.assertAlmostEqual(rms_normalized_error(values, 7.5 * values), 0.0)
+        self.assertAlmostEqual(
+            shape_rmse(values, 7.5 * values),
+            rms_normalized_error(values, 7.5 * values),
+        )
 
     def test_revision_noise_and_bootstrap_are_reproducible(self):
         values = np.arange(64.0).reshape(4, 4, 4)

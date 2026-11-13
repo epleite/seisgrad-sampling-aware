@@ -1,0 +1,2 @@
+orientation_deg,dx_m,dy_m,dt_s,contrast_fraction,noise_model,snr_db,attribute,sample_space_ap,sampling_aware_ap,paired_ap_difference
+30.0,25.0,12.5,0.004,0.08,clean,,thdr,0.711090210897582,0.8283630510255477,0.1172728401279658

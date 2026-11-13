@@ -31,11 +31,11 @@ from seisgrad.metrics import (
     average_precision,
     correlation,
     paired_bootstrap_interval,
-    shape_rmse,
+    rms_normalized_error,
 )
 
 
-OUTPUT = ROOT / "output" / "revision_v1.1.2"
+OUTPUT = ROOT / "output" / "revision_v1.1.3"
 IMPLEMENTATIONS = (("sample_space", False), ("sampling_aware", True))
 ATTRIBUTES = ("thdr", "asag", "tdr", "tahg")
 
@@ -48,11 +48,16 @@ def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         writer.writerows(rows)
 
 
+def read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="", encoding="utf-8") as stream:
+        return list(csv.DictReader(stream))
+
+
 def score(name: str, values: np.ndarray) -> np.ndarray:
     return np.abs(values) if name in {"tdr", "tahg"} else values
 
 
-def cross_grid_shape_experiment() -> list[dict[str, object]]:
+def cross_grid_error_experiment() -> list[dict[str, object]]:
     reference_case = fault.SAMPLING_CASES[0]
     _, reference_seismic, _, reference_velocity, _ = fault.generate_case(
         reference_case, throw_m=50.0
@@ -107,7 +112,7 @@ def cross_grid_shape_experiment() -> list[dict[str, object]]:
                             "reference_definition": reference_definition,
                             "implementation": mode,
                             "attribute": name,
-                            "shape_rmse": shape_rmse(
+                            "rms_normalized_error": rms_normalized_error(
                                 reference_crop, estimate_crop
                             ),
                             "correlation": correlation(
@@ -115,7 +120,7 @@ def cross_grid_shape_experiment() -> list[dict[str, object]]:
                             ),
                         }
                     )
-    write_csv(OUTPUT / "cross_grid_shape_rmse.csv", rows)
+    write_csv(OUTPUT / "cross_grid_rms_normalized_error.csv", rows)
     return rows
 
 
@@ -177,9 +182,13 @@ def velocity_sensitivity_experiment() -> list[dict[str, object]]:
         rows.append(
             {
                 "velocity_case": name,
-                "cross_grid_shape_rmse": shape_rmse(ref_crop, estimate_crop),
+                "cross_grid_rms_normalized_error": rms_normalized_error(
+                    ref_crop, estimate_crop
+                ),
                 "cross_grid_correlation": correlation(ref_crop, estimate_crop),
-                "velocity_only_shape_rmse": shape_rmse(known_crop, velocity_crop),
+                "velocity_only_rms_normalized_error": rms_normalized_error(
+                    known_crop, velocity_crop
+                ),
             }
         )
 
@@ -241,7 +250,9 @@ def operator_sensitivity_experiment() -> list[dict[str, object]]:
                         "horizontal_crop_samples": horizontal_crop,
                         "temporal_crop_samples": 8,
                         "attribute": name,
-                        "shape_rmse": shape_rmse(reference, estimate),
+                        "rms_normalized_error": rms_normalized_error(
+                            reference, estimate
+                        ),
                         "correlation": correlation(reference, estimate),
                     }
                 )
@@ -465,73 +476,138 @@ def summarize_pairs(
     return summaries
 
 
-def plot_shape_rmse(rows: list[dict[str, object]]) -> None:
+def plot_rms_normalized_error(rows: list[dict[str, object]]) -> None:
+    """Plot implementation-matched errors with redundant visual coding."""
+
     rows = [
         row
         for row in rows
         if row["reference_definition"] == "implementation_matched_native"
     ]
     cases = [case.name for case in fault.SAMPLING_CASES[1:]]
-    labels = ["25 x 12.5", "12.5 x 25", "25 x 25"]
-    x = np.arange(len(cases))
-    width = 0.10
-    colors = ("#4169a1", "#d0743c", "#4d8b6f", "#815a9e")
-    figure, axis = plt.subplots(figsize=(9.0, 4.7), constrained_layout=True)
-    for attribute_index, (attribute, color) in enumerate(zip(ATTRIBUTES, colors)):
+    titles = (
+        "25 m × 12.5 m × 4 ms",
+        "12.5 m × 25 m × 4 ms",
+        "25 m × 25 m × 4 ms",
+    )
+    x = np.arange(len(ATTRIBUTES))
+    width = 0.34
+    styles = {
+        "sample_space": {
+            "label": "Sample-space",
+            "color": "#d9d9d9",
+            "edgecolor": "#303030",
+            "hatch": "///",
+        },
+        "sampling_aware": {
+            "label": "Sampling-aware",
+            "color": "#4472c4",
+            "edgecolor": "#303030",
+            "hatch": None,
+        },
+    }
+    figure, axes = plt.subplots(1, 3, figsize=(9.2, 3.35), sharey=True)
+    figure.subplots_adjust(
+        left=0.08, right=0.995, bottom=0.18, top=0.80, wspace=0.10
+    )
+    for panel_index, (axis, case, title) in enumerate(zip(axes, cases, titles)):
         for mode_index, mode in enumerate(("sample_space", "sampling_aware")):
             values = [
                 float(
                     next(
-                        row["shape_rmse"]
+                        row["rms_normalized_error"]
                         for row in rows
                         if row["sampling_case"] == case
                         and row["implementation"] == mode
                         and row["attribute"] == attribute
                     )
                 )
-                for case in cases
+                for attribute in ATTRIBUTES
             ]
-            offset = (attribute_index * 2 + mode_index - 3.5) * width
+            style = styles[mode]
             axis.bar(
-                x + offset,
+                x + (mode_index - 0.5) * width,
                 values,
                 width,
-                color=color,
-                alpha=0.45 if mode == "sample_space" else 1.0,
-                hatch="//" if mode == "sample_space" else None,
+                color=style["color"],
+                edgecolor=style["edgecolor"],
+                linewidth=0.7,
+                hatch=style["hatch"],
+                label=style["label"],
+                zorder=3,
             )
-    axis.set_xticks(x, labels)
-    axis.set_xlabel("Target horizontal sampling (m); dt = 4 ms")
-    axis.set_ylabel("Shape RMSE")
-    axis.spines[["top", "right"]].set_visible(False)
-    handles = [
-        Patch(facecolor=color, label=attribute.upper())
-        for attribute, color in zip(ATTRIBUTES, colors)
-    ]
-    handles.extend(
-        (
-            Patch(
-                facecolor="0.55",
-                alpha=0.45,
-                hatch="//",
-                label="sample space",
-            ),
-            Patch(facecolor="0.55", label="sampling aware"),
+        axis.set_title(title, fontsize=9.5, pad=6)
+        axis.set_xticks(x, [name.upper() for name in ATTRIBUTES])
+        axis.set_xlabel("Attribute")
+        axis.grid(axis="y", color="0.88", linewidth=0.6, zorder=0)
+        axis.spines[["top", "right"]].set_visible(False)
+        axis.text(
+            0.02,
+            0.97,
+            f"({chr(97 + panel_index)})",
+            transform=axis.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
         )
+    axes[0].set_ylabel("RMS-normalized error")
+    handles = [
+        Patch(
+            facecolor=styles[mode]["color"],
+            edgecolor=styles[mode]["edgecolor"],
+            hatch=styles[mode]["hatch"],
+            label=styles[mode]["label"],
+        )
+        for mode in ("sample_space", "sampling_aware")
+    ]
+    figure.legend(
+        handles=handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.995),
+        frameon=False,
+        ncol=2,
+        fontsize=8.5,
     )
-    axis.legend(handles=handles, frameon=False, ncol=3, fontsize=8)
-    figure.savefig(OUTPUT / "figure_3_shape_rmse.png", dpi=600)
+    figure.savefig(
+        OUTPUT / "figure_3_rms_normalized_error.png",
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(figure)
 
 
 def plot_paired_changes(rows: list[dict[str, object]]) -> None:
     selected = [row for row in rows if row["experiment"] == "fault"]
-    figure, axes = plt.subplots(1, 2, figsize=(9.0, 4.2), sharey=True, constrained_layout=True)
-    colors = dict(zip(ATTRIBUTES, ("#4169a1", "#d0743c", "#4d8b6f", "#815a9e")))
-    for axis, noise_model in zip(
-        axes, ("gaussian", "colored_impulsive_footprint")
+    figure, axes = plt.subplots(1, 2, figsize=(8.8, 3.65), sharey=True)
+    figure.subplots_adjust(
+        left=0.09, right=0.995, bottom=0.18, top=0.80, wspace=0.10
+    )
+    styles = {
+        "thdr": {
+            "color": "#4472c4",
+            "marker": "o",
+            "linestyle": "-",
+            "markerfacecolor": "#4472c4",
+        },
+        "asag": {
+            "color": "#d55e00",
+            "marker": "s",
+            "linestyle": "--",
+            "markerfacecolor": "white",
+        },
+    }
+    panel_data = (
+        ("gaussian", "Gaussian white noise"),
+        (
+            "colored_impulsive_footprint",
+            "Colored impulsive noise +\nacquisition footprint",
+        ),
+    )
+    for panel_index, (axis, (noise_model, title)) in enumerate(
+        zip(axes, panel_data)
     ):
-        for attribute in ATTRIBUTES:
+        for attribute in ("thdr", "asag"):
             data = [
                 row
                 for row in selected
@@ -547,23 +623,59 @@ def plot_paired_changes(rows: list[dict[str, object]]) -> None:
                 x,
                 y,
                 yerr=np.vstack((y - low, high - y)),
-                marker="o",
-                capsize=3,
-                color=colors[attribute],
+                marker=styles[attribute]["marker"],
+                markerfacecolor=styles[attribute]["markerfacecolor"],
+                markeredgecolor=styles[attribute]["color"],
+                markersize=5.0,
+                linestyle=styles[attribute]["linestyle"],
+                linewidth=1.4,
+                elinewidth=1.1,
+                capsize=3.5,
+                capthick=1.1,
+                color=styles[attribute]["color"],
                 label=attribute.upper(),
+                zorder=3,
             )
-        axis.axhline(0.0, color="0.35", linewidth=0.8)
-        axis.set_title(noise_model.replace("_", " "))
+        axis.axhline(0.0, color="0.35", linewidth=0.9, zorder=1)
+        axis.set_title(title, fontsize=9.5, pad=6)
         axis.set_xlabel("Fault throw (m)")
+        axis.set_xticks((25, 50, 100))
+        axis.grid(axis="y", color="0.88", linewidth=0.6, zorder=0)
         axis.spines[["top", "right"]].set_visible(False)
-    axes[0].set_ylabel("Paired AP difference (sampling aware - sample space)")
-    axes[1].legend(frameon=False, fontsize=8)
-    figure.savefig(OUTPUT / "figure_4_paired_ap.png", dpi=600)
+        axis.text(
+            0.02,
+            0.97,
+            f"({chr(97 + panel_index)})",
+            transform=axis.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
+        )
+    axes[0].set_ylabel(r"$\Delta$AP (sampling-aware $-$ sample-space)")
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.995),
+        frameon=False,
+        ncol=2,
+        fontsize=8.5,
+    )
+    figure.savefig(
+        OUTPUT / "figure_4_paired_ap.png", dpi=600, bbox_inches="tight"
+    )
     plt.close(figure)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--figures-only",
+        action="store_true",
+        help="Regenerate Figures 3 and 4 from the stored revision tables.",
+    )
     parser.add_argument(
         "--skip-noise",
         action="store_true",
@@ -572,15 +684,23 @@ def main() -> None:
     args = parser.parse_args()
     OUTPUT.mkdir(parents=True, exist_ok=True)
 
-    print("Running cross-grid shape-RMSE experiment...", flush=True)
-    shape_rows = cross_grid_shape_experiment()
+    if args.figures_only:
+        plot_rms_normalized_error(
+            read_csv(OUTPUT / "cross_grid_rms_normalized_error.csv")
+        )
+        plot_paired_changes(read_csv(OUTPUT / "paired_bootstrap_summary.csv"))
+        print(f"Revision figures written to {OUTPUT}")
+        return
+
+    print("Running cross-grid RMS-normalized-error experiment...", flush=True)
+    error_rows = cross_grid_error_experiment()
     print("Running velocity-sensitivity experiment...", flush=True)
     velocity_sensitivity_experiment()
     print("Running operator-sensitivity experiment...", flush=True)
     operator_sensitivity_experiment()
     print("Running deterministic clean-channel control...", flush=True)
     clean_channel_control()
-    plot_shape_rmse(shape_rows)
+    plot_rms_normalized_error(error_rows)
 
     if not args.skip_noise:
         print("Running 30-realization paired fault experiment...", flush=True)

@@ -26,7 +26,10 @@ def main() -> None:
     parser.add_argument(
         "--figures-only",
         action="store_true",
-        help="Regenerate the paper figures without recomputing stored benchmark tables.",
+        help=(
+            "Regenerate synthetic Figures 1--4 without recomputing stored "
+            "benchmark tables; Figure 5 requires the external Penobscot volume."
+        ),
     )
     parser.add_argument(
         "--skip-tests",
@@ -43,9 +46,16 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.figures_only and args.penobscot_data is not None:
+        parser.error(
+            "--figures-only cannot be combined with --penobscot-data; "
+            "omit --figures-only to regenerate the field experiment and Figure 5"
+        )
+
     if args.figures_only:
         run("scripts/run_channel_benchmark.py", "--figures-only")
         run("scripts/run_benchmark.py", "--figures-only")
+        run("scripts/run_revision_experiments.py", "--figures-only")
     else:
         # The fault benchmark uses the channel-margin table when building Fig. 4.
         run("scripts/run_channel_benchmark.py")

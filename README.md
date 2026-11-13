@@ -17,7 +17,7 @@ velocity. The conventional comparator differentiates per sample.
   baselines, and metrics;
 - `scripts/run_channel_benchmark.py`: incised-channel benchmark and Figure 3;
 - `scripts/run_benchmark.py`: fault benchmark and Figures 1, 2, and 4;
-- `scripts/run_revision_experiments.py`: cross-grid shape RMSE, paired
+- `scripts/run_revision_experiments.py`: cross-grid RMS-normalized error, paired
   30-realization noise tests, velocity sensitivity, and operator sensitivity;
 - `scripts/fetch_penobscot.py`: checksum-verified retrieval of only the public
   amplitude array needed for the field experiment;
@@ -65,11 +65,14 @@ Full recomputation, figure generation, and tests:
 python scripts/reproduce_paper.py
 ```
 
-Fast figure regeneration from the stored result tables:
+Fast regeneration of synthetic Figures 1--4 from the stored result tables:
 
 ```bash
 python scripts/reproduce_paper.py --figures-only
 ```
+
+Figure 5 is not changed by `--figures-only`; regenerating it requires the
+external Penobscot amplitude volume and the full field command below.
 
 The command also runs the revision experiments. The full workflow runs the
 channel benchmark first because the joint benchmark figure combines channel
@@ -122,5 +125,5 @@ MIT. See `LICENSE`.
 
 The DOI for all SeisGrad versions is
 [10.5281/zenodo.22127203](https://doi.org/10.5281/zenodo.22127203). The exact
-archive DOI for v1.1.2 is recorded in the corresponding Zenodo release. See
+archive DOI for v1.1.3 is recorded in the corresponding Zenodo release. See
 `CITATION.cff` for machine-readable citation metadata.

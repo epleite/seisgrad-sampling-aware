@@ -21,14 +21,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from seisgrad.attributes import gradient_attributes
-from seisgrad.metrics import shape_rmse
+from seisgrad.metrics import rms_normalized_error
 
 
 NATIVE_SPACING = (12.5, 25.01, 0.004)
 SUBVOLUME_SHAPE = (192, 192, 384)
 VELOCITIES_M_S = (2550.0, 3000.0, 3450.0)
 ATTRIBUTES = ("thdr", "asag", "tdr", "tahg")
-OUTPUT = ROOT / "output" / "revision_v1.1.2"
+OUTPUT = ROOT / "output" / "revision_v1.1.3"
 
 
 def central_subvolume(volume: np.ndarray) -> np.ndarray:
@@ -168,7 +168,7 @@ def evaluate_axis(
                             "reference_definition": reference_definition,
                             "implementation": implementation,
                             "attribute": name,
-                            "shape_rmse": shape_rmse(
+                            "rms_normalized_error": rms_normalized_error(
                                 ref_crop, estimate_crop
                             ),
                         }
@@ -245,7 +245,7 @@ def evaluate_unfiltered_control(
                         "reference_definition": reference_definition,
                         "implementation": implementation,
                         "attribute": name,
-                        "shape_rmse": shape_rmse(
+                        "rms_normalized_error": rms_normalized_error(
                             ref_crop, estimate_crop
                         ),
                     }
@@ -266,36 +266,131 @@ def plot_crossline_panels(panels: dict[str, np.ndarray]) -> None:
 
     time_index = panels["amplitude"].shape[2] // 2
     keys = (
-        "amplitude",
         "reference_thdr",
         "sample_space_thdr",
         "sampling_aware_thdr",
+        "reference_tdr",
         "sample_space_tdr",
         "sampling_aware_tdr",
     )
-    titles = (
-        "Filtered amplitude",
-        "Native-grid THDR reference",
-        "Conventional THDR",
-        "Sampling-aware THDR",
-        "Conventional TDR",
-        "Sampling-aware TDR",
+    column_titles = ("Native reference", "Conventional", "Sampling-aware")
+    dx_km = 12.5 / 1000.0
+    dy_km = 50.02 / 1000.0
+    nx, ny = panels["amplitude"].shape[:2]
+    extent = (0.0, (nx - 1) * dx_km, 0.0, (ny - 1) * dy_km)
+    x_coordinates = np.arange(nx) * dx_km
+    y_coordinates = np.arange(ny) * dy_km
+
+    figure, axes = plt.subplots(
+        2,
+        3,
+        figsize=(9.3, 5.8),
+        sharex=True,
+        sharey=True,
+        constrained_layout=True,
     )
-    figure, axes = plt.subplots(2, 3, figsize=(10.0, 6.4), constrained_layout=True)
-    for axis, key, title in zip(axes.ravel(), keys, titles):
+    thdr_mappable = None
+    tdr_mappable = None
+    for panel_index, (axis, key) in enumerate(zip(axes.ravel(), keys)):
         image = panels[key][:, :, time_index].T
-        if key == "amplitude":
+        if key.endswith("thdr"):
             limit = float(np.percentile(np.abs(image), 99.0))
-            axis.imshow(image, cmap="gray", vmin=-limit, vmax=limit, origin="lower")
-        elif key.endswith("thdr"):
-            limit = float(np.percentile(np.abs(image), 99.0))
-            axis.imshow(image / max(limit, 1e-12), cmap="magma", vmin=0.0, vmax=1.0, origin="lower")
+            thdr_mappable = axis.imshow(
+                image / max(limit, 1e-12),
+                cmap="magma",
+                vmin=0.0,
+                vmax=1.0,
+                origin="lower",
+                extent=extent,
+                aspect="auto",
+                interpolation="nearest",
+            )
         else:
-            axis.imshow(image, cmap="coolwarm", vmin=-np.pi / 2.0, vmax=np.pi / 2.0, origin="lower")
-        axis.set_title(title, fontsize=9)
-        axis.set_xticks([])
-        axis.set_yticks([])
-    figure.savefig(OUTPUT / "figure_5_penobscot_time_slice.png", dpi=600)
+            tdr_mappable = axis.imshow(
+                image,
+                cmap="coolwarm",
+                vmin=-np.pi / 2.0,
+                vmax=np.pi / 2.0,
+                origin="lower",
+                extent=extent,
+                aspect="auto",
+                interpolation="nearest",
+            )
+            axis.contour(
+                x_coordinates,
+                y_coordinates,
+                image,
+                levels=(0.0,),
+                colors="0.15",
+                linewidths=0.25,
+                alpha=0.55,
+            )
+        axis.text(
+            0.025,
+            0.965,
+            f"({chr(97 + panel_index)})",
+            transform=axis.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
+            color="black",
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.72, "pad": 1.3},
+        )
+        axis.tick_params(labelsize=7.5, direction="out", length=2.5)
+    for axis, title in zip(axes[0], column_titles):
+        axis.set_title(title, fontsize=9.5, pad=6)
+    for axis in axes[1]:
+        axis.set_xlabel("Inline distance (km)", fontsize=8.5)
+    for axis in axes[:, 0]:
+        axis.set_ylabel("Crossline distance (km)", fontsize=8.5)
+    axes[0, 0].annotate(
+        "THDR",
+        xy=(-0.31, 0.5),
+        xycoords="axes fraction",
+        rotation=90,
+        ha="center",
+        va="center",
+        fontsize=9.5,
+        fontweight="bold",
+    )
+    axes[1, 0].annotate(
+        "TDR",
+        xy=(-0.31, 0.5),
+        xycoords="axes fraction",
+        rotation=90,
+        ha="center",
+        va="center",
+        fontsize=9.5,
+        fontweight="bold",
+    )
+    if thdr_mappable is None or tdr_mappable is None:
+        raise RuntimeError("missing THDR or TDR panels")
+    thdr_bar = figure.colorbar(
+        thdr_mappable,
+        ax=axes[0, :],
+        location="right",
+        fraction=0.035,
+        pad=0.015,
+    )
+    thdr_bar.set_label("THDR / P99(THDR)", fontsize=8.5)
+    thdr_bar.ax.tick_params(labelsize=7.5)
+    tdr_bar = figure.colorbar(
+        tdr_mappable,
+        ax=axes[1, :],
+        location="right",
+        fraction=0.035,
+        pad=0.015,
+    )
+    tdr_bar.set_label("TDR (rad)", fontsize=8.5)
+    tdr_bar.set_ticks((-np.pi / 2.0, 0.0, np.pi / 2.0))
+    tdr_bar.set_ticklabels((r"$-\pi/2$", "0", r"$\pi/2$"))
+    tdr_bar.ax.tick_params(labelsize=7.5)
+    figure.savefig(
+        OUTPUT / "figure_5_penobscot_time_slice.png",
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(figure)
 
 
